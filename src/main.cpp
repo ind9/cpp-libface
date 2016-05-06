@@ -497,7 +497,6 @@ do_import(std::string file, uint_t limit,
         size_t nlines = 0;
         size_t foffset = 0;
 
-        fprintf(stderr, "Printing if_mmap_addr: %p\n", if_mmap_addr);
         if (if_mmap_addr) {
             int r = munmap(if_mmap_addr, if_length);
             if (r < 0) {
