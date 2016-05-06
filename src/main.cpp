@@ -560,7 +560,6 @@ do_import(std::string file, uint_t limit,
         DCERR("Creating PhraseMap::Input is " << (!sg.is_input_sorted ? "NOT " : "") << "sorted\n");
 
         fclose(fin);
-        fprintf(stderr, "Building the algorithm: ");
         for (SuggestGroupIterator it = suggest_groups.begin(); it != suggest_groups.end(); ++it) {
             it->second.pm.finalize(it->second.is_input_sorted);
             rnadded += it->second.initialize_RMQ();
