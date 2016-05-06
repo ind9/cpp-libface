@@ -105,10 +105,10 @@ struct InputLineParser {
 
     StringProxy *psnippet_proxy; // The psnippet_proxy is a pointer to a Proxy String object that points to memory in the mmapped region
 
-    InputLineParser(const char *_mem_base, size_t _bo, 
-                    const char *_buff, int *_pn, 
+    InputLineParser(const char *_mem_base, size_t _bo,
+                    const char *_buff, int *_pn,
                     std::string *_pphrase, StringProxy *_psp)
-        : state(ILP_BEFORE_NON_WS), mem_base(_mem_base), buff(_buff), 
+        : state(ILP_BEFORE_NON_WS), mem_base(_mem_base), buff(_buff),
           buff_offset(_bo), pn(_pn), pphrase(_pphrase), psnippet_proxy(_psp)
     { }
 
@@ -118,8 +118,8 @@ struct InputLineParser {
         int n = 0;                  // Temporary buffer for numeric (integer) fields.
         const char *p_start = NULL; // Beginning of the phrase.
         const char *s_start = NULL; // Beginning of the snippet.
-        int p_len = 0;              // Phrase Length.
-        int s_len = 0;              // Snippet length.
+        size_t p_len = 0;              // Phrase Length.
+        size_t s_len = 0;              // Snippet length.
 
         while (this->buff[i]) {
             char ch = this->buff[i];
@@ -173,7 +173,7 @@ struct InputLineParser {
                     // Note: Skip to ILP_SNIPPET since the snippet may
                     // start with a white-space that we wish to
                     // preserve.
-                    // 
+                    //
                     this->state = ILP_SNIPPET;
                     s_start = this->buff + i + 1;
                 }
@@ -198,7 +198,7 @@ struct InputLineParser {
     }
 
     void
-    on_phrase(const char *data, int len) {
+    on_phrase(const char *data, size_t len) {
         if (len && this->pphrase) {
             // DCERR("on_phrase("<<data<<", "<<len<<")\n");
             this->pphrase->assign(data, len);
@@ -206,9 +206,9 @@ struct InputLineParser {
     }
 
     void
-    on_snippet(const char *data, int len) {
+    on_snippet(const char *data, size_t len) {
         if (len && this->psnippet_proxy) {
-            const char *base = this->mem_base + this->buff_offset + 
+            const char *base = this->mem_base + this->buff_offset +
                 (data - this->buff);
             if (base < if_mmap_addr || base + len > if_mmap_addr + if_length) {
                 fprintf(stderr, "base: %p, if_mmap_addr: %p, if_mmap_addr+if_length: %p\n", base, if_mmap_addr, if_mmap_addr + if_length);
@@ -264,7 +264,7 @@ to_lowercase(char c) {
 
 inline void
 str_lowercase(std::string &str) {
-    std::transform(str.begin(), str.end(), 
+    std::transform(str.begin(), str.end(),
                    str.begin(), to_lowercase);
 
 }
@@ -372,7 +372,7 @@ rich_suggestions_json_array(vp_t& suggestions) {
         escape_special_chars(snippet);
 
         std::string trailer = i + 1 == suggestions.end() ? "\n" : ",\n";
-        ret += " { \"suggestion\": \"" + i->phrase + "\" }" + trailer; 
+        ret += " { \"suggestion\": \"" + i->phrase + "\" }" + trailer;
     }
     ret += "]";
     return ret;
@@ -475,7 +475,7 @@ void get_line(std::ifstream fin, char *buff, int buff_len, int &read_len) {
 
 
 int
-do_import(std::string file, uint_t limit, 
+do_import(std::string file, uint_t limit,
           int &rnadded, int &rnlines) {
     rnadded = 0;
 #if defined USE_CXX_IO
@@ -494,9 +494,10 @@ do_import(std::string file, uint_t limit,
     }
     else {
         building = true;
-        int nlines = 0;
-        int foffset = 0;
+        size_t nlines = 0;
+        size_t foffset = 0;
 
+        fprintf(stderr, "Printing if_mmap_addr: %p\n", if_mmap_addr);
         if (if_mmap_addr) {
             int r = munmap(if_mmap_addr, if_length);
             if (r < 0) {
@@ -528,7 +529,8 @@ do_import(std::string file, uint_t limit,
 
             int llen = -1;
             get_line(fin, buff, INPUT_LINE_SIZE, llen);
-            if (llen == -1) {
+            if (llen < 0) {
+                cerr << "No more data to read. Exiting with return value " << llen << std::endl;
                 break;
             }
 
@@ -559,6 +561,7 @@ do_import(std::string file, uint_t limit,
         DCERR("Creating PhraseMap::Input is " << (!sg.is_input_sorted ? "NOT " : "") << "sorted\n");
 
         fclose(fin);
+        fprintf(stderr, "Building the algorithm: ");
         for (SuggestGroupIterator it = suggest_groups.begin(); it != suggest_groups.end(); ++it) {
             it->second.pm.finalize(it->second.is_input_sorted);
             rnadded += it->second.initialize_RMQ();
