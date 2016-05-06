@@ -529,8 +529,7 @@ do_import(std::string file, uint_t limit,
 
             int llen = -1;
             get_line(fin, buff, INPUT_LINE_SIZE, llen);
-            if (llen < 0) {
-                cerr << "No more data to read. Exiting with return value " << llen << std::endl;
+            if (llen == -1) {
                 break;
             }
 
